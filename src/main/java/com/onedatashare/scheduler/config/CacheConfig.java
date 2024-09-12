@@ -1,25 +1,33 @@
 package com.onedatashare.scheduler.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.eureka.one.EurekaOneDiscoveryStrategyFactory;
-import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import com.hazelcast.map.IMap;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+
+import java.util.UUID;
+
 
 @Configuration
 public class CacheConfig {
 
 
-    @Bean(name = "hazelcastConfig")
+    @Bean(name = "hazelcastInstance")
     @Profile("prod")
-    public Config prodHazelcastConfig(EurekaClient eurekaClient) {
+    public HazelcastInstance prodHazelcastInstance(EurekaClient eurekaClient) {
         Config config = new Config();
-        config.setClusterName("Transfer-Scheduler-Cluster");
+        config.setClusterName("prod-scheduler-cluster");
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         EurekaOneDiscoveryStrategyFactory.setEurekaClient(eurekaClient);
         config.getNetworkConfig().getJoin().getEurekaConfig().setEnabled(true)
@@ -28,23 +36,27 @@ public class CacheConfig {
                 .setProperty("shouldUseDns", "false")
                 .setProperty("self-registration", "true")
                 .setProperty("use-metadata-for-host-and-port", "true");
-
-        return config;
+        return Hazelcast.newHazelcastInstance(config);
     }
 
-    @Bean(name = "hazelcastConfig")
+    @Bean(name = "hazelcastInstance")
     @Profile("dev")
-    public Config devHazelcastConfig() {
+    public HazelcastInstance devHazelcastInstance() {
         Config config = new Config();
-        config.setClusterName("scheduler-cluster");
+        config.setClusterName("dev-scheduler-cluster");
         config.getNetworkConfig().setPortAutoIncrement(true);
-        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        return config;
+        return Hazelcast.newHazelcastInstance(config);
     }
 
     @Bean
-    public HazelcastInstance hazelcastInstance(Config hazelcastConfig) {
-        return HazelcastInstanceFactory.newHazelcastInstance(hazelcastConfig);
+    public IMap<String, HazelcastJsonValue> fileTransferNodeMetaDataIMap(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
+        IMap<String, HazelcastJsonValue> fileNodeMap = hazelcastInstance.getMap("file-transfer-node-map");
+        fileNodeMap.addIndex(IndexType.HASH, "odsOwner");
+        fileNodeMap.addIndex(IndexType.HASH, "nodeName");
+        fileNodeMap.addIndex(IndexType.HASH, "runningJob");
+        fileNodeMap.addIndex(IndexType.HASH, "online");
+
+        return fileNodeMap;
     }
 
     @Bean

@@ -1,19 +1,19 @@
 package com.onedatashare.scheduler.services;
 
+import com.onedatashare.scheduler.model.EntityInfo;
 import com.onedatashare.scheduler.model.credential.AccountEndpointCredential;
 import com.onedatashare.scheduler.services.expanders.FTPExpander;
-import com.onedatashare.scheduler.model.EntityInfo;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FTPExpanderTest extends TestCase {
+public class FTPExpanderTest {
 
     FTPExpander testObj;
 
-    public AccountEndpointCredential testFTPCredential(){
+    public AccountEndpointCredential testFTPCredential() {
         AccountEndpointCredential accountEndpointCredential = new AccountEndpointCredential();
         accountEndpointCredential.setAccountId("testuser@helloworld.com");
         accountEndpointCredential.setUsername("anonymous");
@@ -22,7 +22,7 @@ public class FTPExpanderTest extends TestCase {
         return accountEndpointCredential;
     }
 
-    public AccountEndpointCredential testNCBICredential(){
+    public AccountEndpointCredential testNCBICredential() {
         AccountEndpointCredential accountEndpointCredential = new AccountEndpointCredential();
         accountEndpointCredential.setAccountId("testuser@helloworld.com");
         accountEndpointCredential.setUsername("anonymous");
@@ -31,17 +31,19 @@ public class FTPExpanderTest extends TestCase {
         return accountEndpointCredential;
     }
 
+    @Test
     public void testlistAllFilesFromSpeedTest() {
         testObj = new FTPExpander();
         testObj.createClient(testFTPCredential());
-        List<EntityInfo> fullFiles = testObj.expandedFileSystem(new ArrayList<>(),"/");
-        for(EntityInfo file: fullFiles){
+        List<EntityInfo> fullFiles = testObj.expandedFileSystem(new ArrayList<>(), "/");
+        for (EntityInfo file : fullFiles) {
             System.out.println(file.toString());
         }
-        Assert.isTrue(fullFiles.size() >0, "the amount of files on speed test tele2net");
+        Assert.isTrue(fullFiles.size() > 0, "the amount of files on speed test tele2net");
     }
 
-    public void testListingOneGB(){
+    @Test
+    public void testListingOneGB() {
         testObj = new FTPExpander();
         testObj.createClient(testNCBICredential());
         ArrayList<EntityInfo> selectedFolders = new ArrayList<>();
@@ -49,26 +51,27 @@ public class FTPExpanderTest extends TestCase {
         fileInfo.setId("1GB");
         fileInfo.setPath("1GB");
         selectedFolders.add(fileInfo);
-        List<EntityInfo> fullFiles = testObj.expandedFileSystem(selectedFolders,"");
-        for(EntityInfo file: fullFiles){
+        List<EntityInfo> fullFiles = testObj.expandedFileSystem(selectedFolders, "");
+        for (EntityInfo file : fullFiles) {
             System.out.println(file.toString());
         }
 
         Assert.isTrue(fullFiles.size() > 0, "the amount of files on speed test tele2net");
     }
 
-    public void testListingUploadAndHundreMB(){
+    @Test
+    public void testListingUploadAndHundreMB() {
         testObj = new FTPExpander();
         testObj.createClient(testFTPCredential());
-        List<EntityInfo> fullFiles = testObj.expandedFileSystem(createInfoList(),"");
-        for(EntityInfo file: fullFiles){
+        List<EntityInfo> fullFiles = testObj.expandedFileSystem(createInfoList(), "");
+        for (EntityInfo file : fullFiles) {
             System.out.println(file.toString());
         }
 
         Assert.isTrue(fullFiles.size() > 0, "the amount of files on speed test tele2net");
     }
 
-    public EntityInfo hundredMBFile(){
+    public EntityInfo hundredMBFile() {
         EntityInfo fileInfo = new EntityInfo();
         fileInfo.setId("100MB.zip");
         fileInfo.setSize(104857600);
@@ -76,14 +79,14 @@ public class FTPExpanderTest extends TestCase {
         return fileInfo;
     }
 
-    public EntityInfo uploadDirectory(){
+    public EntityInfo uploadDirectory() {
         EntityInfo testInfo = new EntityInfo();
         testInfo.setId("upload/");
         testInfo.setPath("upload/");
         return testInfo;
     }
 
-    public List<EntityInfo> createInfoList(){
+    public List<EntityInfo> createInfoList() {
         ArrayList<EntityInfo> listInfo = new ArrayList<>();
         listInfo.add(uploadDirectory());
         listInfo.add(hundredMBFile());

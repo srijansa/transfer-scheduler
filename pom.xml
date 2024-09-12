@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.onedatashare</groupId>
-    <artifactId>rabbitmq-scheduler</artifactId>
+    <artifactId>transfer-scheduler</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>rabbitmq-scheduler</name>
+    <name>transfer-scheduler</name>
     <description>Transfer Scheduler for ODS</description>
 
     <properties>
@@ -67,7 +67,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-test</artifactId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -79,11 +79,6 @@
             <groupId>com.google.auth</groupId>
             <artifactId>google-auth-library-oauth2-http</artifactId>
             <version>1.12.1</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>commons-net</groupId>
