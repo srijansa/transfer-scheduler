@@ -7,10 +7,10 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-public class RabbitmqSchedulerApplication {
+public class FileTransferScheduler {
 
-	public static void main(String[] args) {
-		SpringApplication.run(RabbitmqSchedulerApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(FileTransferScheduler.class, args);
+    }
 
 }

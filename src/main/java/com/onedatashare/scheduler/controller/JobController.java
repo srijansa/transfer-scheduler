@@ -1,7 +1,8 @@
 package com.onedatashare.scheduler.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.onedatashare.scheduler.enums.MessageType;
 import com.onedatashare.scheduler.model.EntityInfo;
-import com.onedatashare.scheduler.model.RequestFromODS;
 import com.onedatashare.scheduler.model.RequestFromODSDTO;
 import com.onedatashare.scheduler.model.TransferJobRequest;
 import com.onedatashare.scheduler.services.JobScheduler;
@@ -36,48 +37,44 @@ public class JobController {
     @PostMapping("/job/schedule")
     public ResponseEntity<UUID> scheduleJob(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime jobStartTime, @RequestBody RequestFromODSDTO transferRequest) {
         logger.info(transferRequest.toString());
-        UUID id = this.jobScheduler.saveScheduledJob(transferRequest, jobStartTime);
-        if (id == null) {
-            return ResponseEntity.badRequest().body(null);
-        } else {
+        try {
+            UUID id = this.jobScheduler.saveScheduledJob(transferRequest, jobStartTime);
             return ResponseEntity.ok(id);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
     @PostMapping("/job/direct")
-    public ResponseEntity<UUID> directJob(@RequestBody TransferJobRequest transferRequest) {
+    public ResponseEntity<UUID> directJob(@RequestBody TransferJobRequest transferRequest) throws JsonProcessingException, InterruptedException {
         UUID jobUuid = UUID.randomUUID();
         transferRequest.setJobUuid(jobUuid);
         List<EntityInfo> fileList = this.requestModifier.selectAndExpand(transferRequest.getSource(), transferRequest.getSource().getInfoList());
         transferRequest.getSource().setInfoList(fileList);
-        this.messageSender.sendTransferRequest(transferRequest);
+        this.messageSender.sendMessage(transferRequest, MessageType.TRANSFER_JOB_REQUEST);
         return ResponseEntity.ok(jobUuid);
     }
 
     @GetMapping("/jobs")
-    public ResponseEntity<Collection<RequestFromODS>> listScheduledJobs(@RequestParam String userEmail) {
-        Collection<RequestFromODS> futureJobs = jobScheduler.listScheduledJobs(userEmail);
+    public ResponseEntity<Collection<TransferJobRequest>> listScheduledJobs(@RequestParam String userEmail) throws JsonProcessingException {
+        Collection<TransferJobRequest> futureJobs = jobScheduler.listScheduledJobs(userEmail);
         return ResponseEntity.ok(futureJobs);
     }
 
     @GetMapping("/job/details")
-    public ResponseEntity<RequestFromODS> getScheduledJob(@RequestParam UUID jobUuid) {
-        RequestFromODS job = jobScheduler.getScheduledJobDetails(jobUuid);
-        if (job == null) {
-            return ResponseEntity.noContent().build();
-        } else {
+    public ResponseEntity<TransferJobRequest> getScheduledJob(@RequestParam UUID jobUuid) {
+        try {
+            TransferJobRequest job = jobScheduler.getScheduledJobDetails(jobUuid);
             return ResponseEntity.ok(job);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
     @DeleteMapping("/job/delete")
     public ResponseEntity<Void> deleteScheduledJob(@RequestParam UUID jobUuid) {
-        boolean status = jobScheduler.deleteScheduledJob(jobUuid);
-        if (status) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.badRequest().build();
-        }
+        jobScheduler.deleteScheduledJob(jobUuid);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping(value = "/job/run")

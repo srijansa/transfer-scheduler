@@ -1,22 +1,21 @@
 package com.onedatashare.scheduler.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.IndexType;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.eureka.one.EurekaOneDiscoveryStrategyFactory;
 import com.hazelcast.map.IMap;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
+import com.onedatashare.scheduler.model.CarbonIntensityMapKey;
+import com.onedatashare.scheduler.model.carbon.CarbonIpEntry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import java.util.UUID;
+import java.util.List;
 
 
 @Configuration
@@ -49,19 +48,12 @@ public class CacheConfig {
     }
 
     @Bean
-    public IMap<String, HazelcastJsonValue> fileTransferNodeMetaDataIMap(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
-        IMap<String, HazelcastJsonValue> fileNodeMap = hazelcastInstance.getMap("file-transfer-node-map");
-        fileNodeMap.addIndex(IndexType.HASH, "odsOwner");
-        fileNodeMap.addIndex(IndexType.HASH, "nodeName");
-        fileNodeMap.addIndex(IndexType.HASH, "runningJob");
-        fileNodeMap.addIndex(IndexType.HASH, "online");
-
-        return fileNodeMap;
+    public IMap<CarbonIntensityMapKey, List<CarbonIpEntry>> historicalTransferJobMeasurements(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
+        return hazelcastInstance.getMap("historical-transfer-job-measurements");
     }
 
     @Bean
     public TransportClientFactories transportClientFactories() {
         return Jersey3TransportClientFactories.getInstance();
     }
-
 }

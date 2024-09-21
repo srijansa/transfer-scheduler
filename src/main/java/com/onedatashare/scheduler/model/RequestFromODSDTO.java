@@ -10,6 +10,7 @@ public class RequestFromODSDTO {
     private FileDestination destination;
     private UserTransferOptions options;
     private String transferNodeName;
+    private TransferSla transferSla;
 
 
     public RequestFromODS convertToPojo() {
@@ -19,6 +20,7 @@ public class RequestFromODSDTO {
         request.setTransferNodeName(this.transferNodeName);
         request.setOwnerId(this.ownerId);
         request.setOptions(this.options);
+        request.setTransferSla(this.transferSla);
         return request;
     }
 }

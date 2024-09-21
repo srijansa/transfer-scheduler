@@ -1,11 +1,13 @@
 package com.onedatashare.scheduler.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.onedatashare.scheduler.model.FileDestination;
 import com.onedatashare.scheduler.model.FileSource;
 import com.onedatashare.scheduler.model.RequestFromODSDTO;
 import com.onedatashare.scheduler.model.UserTransferOptions;
+import com.onedatashare.scheduler.services.maps.TransferSchedulerMapService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.util.Assert;
@@ -21,7 +23,6 @@ public class JobSchedulerTest {
 
     public JobSchedulerTest() {
         this.hazelcastInstance = Hazelcast.newHazelcastInstance();
-
     }
 
     @MockBean
@@ -30,36 +31,41 @@ public class JobSchedulerTest {
     @MockBean
     RequestModifier requestModifier;
 
+    @MockBean
+    TransferSchedulerMapService transferSchedulerMapService;
+
+    String testUserEmail = "test@gmail.com";
+
     @Test
-    public void testCreateTestPojo() {
-//        HazelcastInstance hazelcastInstance, RequestModifier requestModifier, MessageSender messageSender
-        testObj = new JobScheduler(hazelcastInstance, requestModifier, messageSender);
-        Assert.isTrue(testObj.jobIMap.isEmpty(), "Default map is of size not 0??");
+    public void testOnStartMapIsEmpty() throws JsonProcessingException {
+        //TransferSchedulerMapService transferSchedulerMapService, RequestModifier requestModifier, MessageSender messageSender
+        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        Assert.isTrue(testObj.listScheduledJobs("").isEmpty(), "Default map is of size not 0??");
     }
 
     @Test
-    public void testAddOneNullEntryToHazelcast() {
-        testObj = new JobScheduler(hazelcastInstance, requestModifier, messageSender);
+    public void testAddOneNullEntryToHazelcast() throws JsonProcessingException {
+        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
         testObj.saveScheduledJob(null, LocalDateTime.now());
-        Assert.isTrue(testObj.jobIMap.isEmpty(), "Added one null entry and there should be size 0");
+        Assert.isTrue(testObj.listScheduledJobs("").isEmpty(), "Added one null entry and there should be size 0");
     }
 
     @Test
-    public void testAddOneRealEntryToHazelcast() {
-        testObj = new JobScheduler(hazelcastInstance, requestModifier, messageSender);
+    public void testAddOneRealEntryToHazelcast() throws JsonProcessingException {
+        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
-        request.setOwnerId("test@email.com");
+        request.setOwnerId(this.testUserEmail);
         request.setSource(new FileSource());
         request.setDestination(new FileDestination());
         request.setTransferNodeName("");
         request.setOptions(new UserTransferOptions());
         testObj.saveScheduledJob(request, LocalDateTime.now());
-        Assert.isTrue(testObj.jobIMap.size() == 1, "Added one Valid entry and there should be size 0");
+        Assert.isTrue(testObj.fileTransferScheduleMap.queryUserScheduledJobs(this.testUserEmail).size() == 1, "Added one Valid entry and there should be size 0");
     }
 
     @Test
-    public void testRemoveOneEntryToHazelcast() {
-        testObj = new JobScheduler(hazelcastInstance, requestModifier, messageSender);
+    public void testRemoveOneEntryToHazelcast() throws JsonProcessingException {
+        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
         request.setOwnerId("test@email.com");
         request.setSource(new FileSource());
@@ -67,15 +73,15 @@ public class JobSchedulerTest {
         request.setTransferNodeName("");
         request.setOptions(new UserTransferOptions());
         UUID id = testObj.saveScheduledJob(request, LocalDateTime.now());
-        Assert.isTrue(testObj.jobIMap.size() == 1, "Added one Valid entry and there should be size 0");
+        Assert.isTrue(testObj.listScheduledJobs(this.testUserEmail).size() == 1, "Added one Valid entry and there should be size 0");
         System.out.println("Id: " + id.toString());
         testObj.deleteScheduledJob(id);
-        Assert.isTrue(testObj.jobIMap.isEmpty(), "Tried to delete the only entry so size should be 0");
+        Assert.isTrue(testObj.listScheduledJobs(this.testUserEmail).isEmpty(), "Tried to delete the only entry so size should be 0");
     }
 
     @Test
-    public void testRemoteOneNoneExistentEntry() {
-        testObj = new JobScheduler(hazelcastInstance, requestModifier, messageSender);
+    public void testRemoteOneNoneExistentEntry() throws JsonProcessingException {
+        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
         request.setOwnerId("test@email.com");
         request.setSource(new FileSource());
@@ -83,13 +89,13 @@ public class JobSchedulerTest {
         request.setTransferNodeName("");
         request.setOptions(new UserTransferOptions());
         UUID id = testObj.saveScheduledJob(request, LocalDateTime.now());
-        Assert.isTrue(testObj.jobIMap.size() == 1, "Added one Valid entry and there should be size 0");
+        Assert.isTrue(testObj.listScheduledJobs(this.testUserEmail).size() == 1, "Added one Valid entry and there should be size 0");
 
         System.out.println("Id: " + id.toString());
         testObj.deleteScheduledJob(id);
-        Assert.isTrue(testObj.jobIMap.isEmpty(), "Tried to delete the only entry so size should be 0");
+        Assert.isTrue(testObj.listScheduledJobs(this.testUserEmail).isEmpty(), "Tried to delete the only entry so size should be 0");
         testObj.deleteScheduledJob(id);
-        Assert.isTrue(testObj.jobIMap.isEmpty(), "Tried to delete an entry on an empty map");
+        Assert.isTrue(testObj.listScheduledJobs(this.testUserEmail).isEmpty(), "Tried to delete an entry on an empty map");
 
     }
 

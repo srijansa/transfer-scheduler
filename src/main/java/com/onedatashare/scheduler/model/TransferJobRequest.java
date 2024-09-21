@@ -6,6 +6,7 @@ import com.onedatashare.scheduler.model.credential.OAuthEndpointCredential;
 import lombok.*;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class TransferJobRequest {
+public class TransferJobRequest implements Serializable {
     private String ownerId;
     private Source source;
     private Destination destination;
@@ -22,6 +23,7 @@ public class TransferJobRequest {
     private String transferNodeName;
     @Nullable
     private UUID jobUuid;
+    private TransferSla transferSla;
 
     @Data
     @AllArgsConstructor
