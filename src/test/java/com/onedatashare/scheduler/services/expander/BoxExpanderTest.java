@@ -1,4 +1,4 @@
-package com.onedatashare.scheduler.services;
+package com.onedatashare.scheduler.services.expander;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;

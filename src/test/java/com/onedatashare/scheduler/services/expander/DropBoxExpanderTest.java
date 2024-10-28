@@ -1,4 +1,4 @@
-package com.onedatashare.scheduler.services;
+package com.onedatashare.scheduler.services.expander;
 
 import com.onedatashare.scheduler.model.EntityInfo;
 import com.onedatashare.scheduler.model.credential.OAuthEndpointCredential;
