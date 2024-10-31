@@ -53,7 +53,7 @@ public class CacheConfig {
         config.setClusterName("prod-scheduler-cluster");
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config.setLicenseKey(this.hazelcastLicenseKey);
-
+        config.getNetworkConfig().setPortAutoIncrement(true)
         config.getNetworkConfig().setSSLConfig(sslConfig);
 
         EurekaOneDiscoveryStrategyFactory.setEurekaClient(eurekaClient);
