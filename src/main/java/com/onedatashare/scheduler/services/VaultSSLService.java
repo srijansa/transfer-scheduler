@@ -52,7 +52,7 @@ public class VaultSSLService implements SSLContextFactory {
     public VaultSSLService(VaultTemplate vaultTemplate, Environment env) {
         this.vaultPkiOperations = vaultTemplate.opsForPki();
         this.storePath = Paths.get(System.getProperty("user.home"), "onedatashare", "jobscheduler", "store", "jobscheduler.keystore.p12");
-        storeDuration = Duration.ofMinutes(10);
+        storeDuration = Duration.ofHours(2160);
         this.keyStorePassword = env.getProperty("hz.keystore.password", "changeit");
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }

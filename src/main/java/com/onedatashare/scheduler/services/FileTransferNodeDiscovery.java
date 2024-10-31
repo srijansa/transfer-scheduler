@@ -47,6 +47,18 @@ public class FileTransferNodeDiscovery {
         }).collect(Collectors.toList());
     }
 
+    public List<FileTransferNodeMetaData> getOdsNodes(){
+        PredicateBuilder.EntryObject e = new PredicateBuilderImpl();
+        PredicateBuilder getOwnerNodeAndFree = e.get("nodeName").equal("ODSTransferService").or(e.get("odsOwner").equal(""));
+        Collection<HazelcastJsonValue> userFreeNodeJson = this.fileNodeMap.values(getOwnerNodeAndFree);
+        return userFreeNodeJson.stream().map(hazelcastJsonValue -> {
+            try {
+                return this.objectMapper.readValue(hazelcastJsonValue.getValue(), FileTransferNodeMetaData.class);
+            } catch (JsonProcessingException ex) {return null;}
+        }).collect(Collectors.toList());
+
+    }
+
     public List<FileTransferNodeMetaData> getAvailableNodes(String odsUserName) {
         PredicateBuilder.EntryObject e = new PredicateBuilderImpl();
         Predicate<String, HazelcastJsonValue> getOwnerNodeAndFree = e.get("odsOwner").equal(odsUserName).or(e.get("odsOwner").equal("")).and(e.get("runningJob").equal("false"));

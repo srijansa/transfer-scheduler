@@ -14,10 +14,8 @@ import com.onedatashare.scheduler.model.carbon.CarbonIpEntry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CarbonMapService {
@@ -50,4 +48,45 @@ public class CarbonMapService {
         });
     }
 
+    public Map<CarbonIntensityMapKey, List<CarbonIpEntry>> getLatestCarbonEntryForJob(UUID uuid) throws JsonProcessingException {
+        Predicate<HazelcastJsonValue, HazelcastJsonValue> predicate = e.get("jobUuid").equal(uuid);
+        Set<HazelcastJsonValue> keys = this.carbonIntensityMap.keySet(predicate);
+        CarbonIntensityMapKey latestKeyForJob = null;
+
+        for (HazelcastJsonValue key : keys) {
+            CarbonIntensityMapKey carbonIntensityMapKey = this.objectMapper.readValue(key.toString(), CarbonIntensityMapKey.class);
+            if (latestKeyForJob == null) {
+                latestKeyForJob = carbonIntensityMapKey;
+            }
+            if (carbonIntensityMapKey.getTimeMeasuredAt().isAfter(latestKeyForJob.getTimeMeasuredAt())) {
+                latestKeyForJob = carbonIntensityMapKey;
+            }
+        }
+
+        List<CarbonIpEntry> value = this.getValueForKey(latestKeyForJob);
+        Map<CarbonIntensityMapKey, List<CarbonIpEntry>> retMap = new HashMap<>();
+        retMap.put(latestKeyForJob, value);
+        return retMap;
+    }
+
+    public Map<CarbonIntensityMapKey, List<CarbonIpEntry>> getAllCarbonIntensityForJob(UUID uuid) throws JsonProcessingException {
+        Predicate<HazelcastJsonValue, HazelcastJsonValue> predicate = e.get("jobUuid").equal(uuid);
+        Set<HazelcastJsonValue> keySet = this.carbonIntensityMap.keySet(predicate);
+        Map<CarbonIntensityMapKey, List<CarbonIpEntry>> retMap = new HashMap<>();
+
+        for (HazelcastJsonValue key : keySet) {
+            CarbonIntensityMapKey localKey = this.objectMapper.readValue(key.getValue(), CarbonIntensityMapKey.class);
+            List<CarbonIpEntry> carbonIpEntryList = this.getValueForKey(localKey);
+            retMap.put(localKey, carbonIpEntryList);
+        }
+
+        return retMap.entrySet().stream()
+                .sorted((entry1, entry2) -> entry2.getKey().getTimeMeasuredAt().compareTo(entry1.getKey().getTimeMeasuredAt()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+    }
 }
