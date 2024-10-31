@@ -51,18 +51,21 @@ public class CacheConfig {
     public HazelcastInstance prodHazelcastInstance(EurekaClient eurekaClient, SSLConfig sslConfig) {
         Config config = new Config();
         config.setClusterName("prod-scheduler-cluster");
-        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config.setLicenseKey(this.hazelcastLicenseKey);
         config.getNetworkConfig().setPortAutoIncrement(true);
         config.getNetworkConfig().setSSLConfig(sslConfig);
 
         EurekaOneDiscoveryStrategyFactory.setEurekaClient(eurekaClient);
-        config.getNetworkConfig().getJoin().getEurekaConfig().setEnabled(true)
-                .setProperty("namespace", "hazelcast")
-                .setProperty("use-classpath-eureka-client-props", "false")
-                .setProperty("shouldUseDns", "false")
+        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config.getNetworkConfig().getJoin().getEurekaConfig()
+                .setEnabled(true)
                 .setProperty("self-registration", "true")
+                .setProperty("namespace", "hazelcast")
                 .setProperty("use-metadata-for-host-and-port", "true");
+//                .setProperty("use-classpath-eureka-client-props", "false")
+//                .setProperty("shouldUseDns", "false")
+
+
         return Hazelcast.newHazelcastInstance(config);
     }
 
