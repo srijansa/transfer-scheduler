@@ -58,15 +58,15 @@ public class CacheConfig {
         config.getNetworkConfig().setPortAutoIncrement(true);
         config.getNetworkConfig().setSSLConfig(sslConfig);
 
-        EurekaOneDiscoveryStrategyFactory.setEurekaClient(eurekaClient);
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(false);
         logger.info(this.env.getProperty("eureka.client.serviceUrl.defaultZone"));
         config.getNetworkConfig().getJoin().getEurekaConfig()
                 .setEnabled(true)
-                .setProperty("self-registration", "false")
+                .setProperty("self-registration", "true")
                 .setProperty("shouldUseDns", "false")
-                .setProperty("use-classpath-eureka-client-props", "false")
-                .setProperty("use-metadata-for-host-and-port", "true");
+                .setProperty("serviceUrl.default", this.env.getProperty("eureka.client.serviceUrl.defaultZone"))
+                .setProperty("use-classpath-eureka-client-props", "false");
         return Hazelcast.newHazelcastInstance(config);
     }
 
