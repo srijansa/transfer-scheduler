@@ -21,4 +21,5 @@ public class RequestFromODS implements Serializable {
     FileDestination destination;
     UserTransferOptions options;
     String transferNodeName;
+    TransferSla transferSla;
 }

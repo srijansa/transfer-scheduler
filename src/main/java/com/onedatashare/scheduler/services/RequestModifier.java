@@ -2,7 +2,7 @@ package com.onedatashare.scheduler.services;
 
 import com.onedatashare.scheduler.enums.EndPointType;
 import com.onedatashare.scheduler.model.EntityInfo;
-import com.onedatashare.scheduler.model.RequestFromODS;
+import com.onedatashare.scheduler.model.RequestFromODSDTO;
 import com.onedatashare.scheduler.model.TransferJobRequest;
 import com.onedatashare.scheduler.model.TransferOptions;
 import com.onedatashare.scheduler.model.credential.AccountEndpointCredential;
@@ -13,27 +13,31 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class RequestModifier {
+
     Logger logger = LoggerFactory.getLogger(RequestModifier.class);
 
     @Autowired
     CredentialService credentialService;
+
     @Autowired
     SFTPExpander sftpExpander;
+
     @Autowired
     FTPExpander ftpExpander;
+
     @Autowired
     S3Expander s3Expander;
+
     @Autowired
     BoxExpander boxExpander;
+
     @Autowired
     DropBoxExpander dropBoxExpander;
+
     @Autowired
     HttpExpander httpExpander;
 
@@ -116,22 +120,20 @@ public class RequestModifier {
         return entityInfo;
     }
 
-    public TransferJobRequest createRequest(RequestFromODS odsTransferRequest) {
+    public TransferJobRequest createRequest(RequestFromODSDTO odsTransferRequest, UUID jobUuid) {
         logger.info(odsTransferRequest.toString());
         TransferJobRequest transferJobRequest = new TransferJobRequest();
         transferJobRequest.setOptions(TransferOptions.createTransferOptionsFromUser(odsTransferRequest.getOptions()));
         transferJobRequest.setOwnerId(odsTransferRequest.getOwnerId());
-        transferJobRequest.setJobUuid(odsTransferRequest.getJobUuid());
+        transferJobRequest.setJobUuid(jobUuid);
         TransferJobRequest.Source s = new TransferJobRequest.Source();
         s.setCredId(odsTransferRequest.getSource().getCredId());
         s.setFileSourcePath(odsTransferRequest.getSource().getFileSourcePath());
         s.setType(odsTransferRequest.getSource().getType());
-
         TransferJobRequest.Destination d = new TransferJobRequest.Destination();
         d.setFileDestinationPath(odsTransferRequest.getDestination().getFileDestinationPath());
         d.setCredId(odsTransferRequest.getDestination().getCredId());
         d.setType(odsTransferRequest.getDestination().getType());
-
 
         switch (odsTransferRequest.getSource().getType()) {
             case scp, http, ftp, sftp, s3:

@@ -1,5 +1,7 @@
 package com.onedatashare.scheduler.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.onedatashare.scheduler.enums.MessageType;
 import com.onedatashare.scheduler.model.TransferParams;
 import com.onedatashare.scheduler.services.MessageSender;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +19,14 @@ public class ApplyTransferParamsController {
     }
 
     @PutMapping("/apply/application/params")
-    public ResponseEntity<String> consumeApplicationParamChange(@RequestBody TransferParams transferParams) {
-        this.messageSender.sendApplicationParams(transferParams, transferParams.getTransferNodeName());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Object> consumeApplicationParamChange(@RequestBody TransferParams transferParams) {
+        try {
+            this.messageSender.sendMessage(transferParams, MessageType.APPLICATION_PARAM_CHANGE);
+            return ResponseEntity.ok().build();
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (InterruptedException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

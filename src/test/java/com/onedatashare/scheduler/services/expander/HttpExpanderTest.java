@@ -1,15 +1,15 @@
-package com.onedatashare.scheduler.services;
+package com.onedatashare.scheduler.services.expander;
 
 import com.onedatashare.scheduler.model.EntityInfo;
 import com.onedatashare.scheduler.model.credential.AccountEndpointCredential;
 import com.onedatashare.scheduler.services.expanders.HttpExpander;
-import junit.framework.TestCase;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpExpanderTest extends TestCase {
+public class HttpExpanderTest {
     HttpExpander testObj;
 
     public AccountEndpointCredential credential(){
@@ -20,17 +20,20 @@ public class HttpExpanderTest extends TestCase {
         return cred;
     }
 
+    @Test
     public void testNoCurrentDirectory(){
         testObj = new HttpExpander();
         testObj.createClient(this.credential());
         List<EntityInfo> files = testObj.expandedFileSystem(new ArrayList<>(), "");
         for(EntityInfo fileInfo : files){
-            Assert.assertTrue(!fileInfo.getId().equals("..")); //make sure no fileInfo is directory above
-            Assert.assertTrue(!fileInfo.getPath().endsWith("..")); //make sure not path ends with directory above
-            Assert.assertTrue(!fileInfo.getId().equals(".")); //make sure no file id is the current directory
+            Assertions.assertTrue(!fileInfo.getId().equals("..")); //make sure no fileInfo is directory above
+            Assertions.assertTrue(!fileInfo.getPath().endsWith("..")); //make sure not path ends with directory above
+            Assertions.assertTrue(!fileInfo.getId().equals(".")); //make sure no file id is the current directory
             System.out.println(fileInfo.toString());
         }
     }
+
+    @Test
     public void testParallelFile(){
         testObj = new HttpExpander();
         testObj.createClient(this.credential());
@@ -41,10 +44,12 @@ public class HttpExpanderTest extends TestCase {
         directoryToExpand.add(entityInfo);
 
         List<EntityInfo> files = testObj.expandedFileSystem(directoryToExpand, "/");
-        Assert.assertTrue(files.size() == 1);
-        Assert.assertTrue(files.get(0).getId().equals("parallel_file.txt"));
-        Assert.assertEquals(10737418240L, files.get(0).getSize());
+        Assertions.assertTrue(files.size() == 1);
+        Assertions.assertTrue(files.get(0).getId().equals("parallel_file.txt"));
+        Assertions.assertEquals(10737418240L, files.get(0).getSize());
     }
+
+    @Test
     public void testParallelDirectory(){
         testObj = new HttpExpander();
         testObj.createClient(this.credential());
@@ -55,12 +60,13 @@ public class HttpExpanderTest extends TestCase {
         directoryToExpand.add(entityInfo);
         List<EntityInfo> files = testObj.expandedFileSystem(directoryToExpand, "/");
         for(EntityInfo file : files){
-            Assert.assertTrue(file.getId().contains("parallel_file.txt"));
-            Assert.assertEquals(10737418240L, file.getSize());
+            Assertions.assertTrue(file.getId().contains("parallel_file.txt"));
+            Assertions.assertEquals(10737418240L, file.getSize());
         }
-        Assert.assertEquals(4, files.size());
+        Assertions.assertEquals(4, files.size());
     }
 
+    @Test
     public void testConcurrencyDir(){
         testObj = new HttpExpander();
         testObj.createClient(this.credential());
@@ -71,12 +77,14 @@ public class HttpExpanderTest extends TestCase {
         directoryToExpand.add(entityInfo);
         List<EntityInfo> files = testObj.expandedFileSystem(directoryToExpand, "/");
         for(EntityInfo file : files){
-            Assert.assertTrue(file.getId().contains("conc_file.txt"));
-            Assert.assertEquals(524288000, file.getSize());
+            Assertions.assertTrue(file.getId().contains("conc_file.txt"));
+            Assertions.assertEquals(524288000, file.getSize());
         }
-        Assert.assertEquals(40, files.size());
+        Assertions.assertEquals(40, files.size());
 
     }
+
+    @Test
     public void testCCDirAndPDir(){
         testObj = new HttpExpander();
         testObj.createClient(this.credential());
@@ -93,9 +101,9 @@ public class HttpExpanderTest extends TestCase {
         directoryToExpand.add(ccInfo);
         List<EntityInfo> files = testObj.expandedFileSystem(directoryToExpand, "");
         for(EntityInfo fileInfo : files){
-            Assert.assertTrue(fileInfo.getId().contains("parallel_file.txt") || fileInfo.getId().contains("conc_file.txt"));
-            Assert.assertTrue(fileInfo.getSize() == 10737418240L || fileInfo.getSize() == 1073741824L);
+            Assertions.assertTrue(fileInfo.getId().contains("parallel_file.txt") || fileInfo.getId().contains("conc_file.txt"));
+            Assertions.assertTrue(fileInfo.getSize() == 10737418240L || fileInfo.getSize() == 1073741824L);
         }
-        Assert.assertEquals(85, files.size());
+        Assertions.assertEquals(85, files.size());
     }
 }
