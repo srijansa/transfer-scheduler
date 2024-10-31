@@ -45,9 +45,13 @@ public class CacheConfig {
     @Value("${hazelcast.enterprise.license}")
     String hazelcastLicenseKey;
 
+    @SneakyThrows
     @Bean(name = "hazelcastInstance")
     @Profile("prod")
     public HazelcastInstance prodHazelcastInstance(EurekaClient eurekaClient, SSLConfig sslConfig) {
+        while (eurekaClient.getApplications().getRegisteredApplications().isEmpty()) {
+            Thread.sleep(1000); // Wait until Eureka has registered nodes
+        }
         Config config = new Config();
         config.setClusterName("prod-scheduler-cluster");
         config.setLicenseKey(this.hazelcastLicenseKey);
@@ -56,10 +60,10 @@ public class CacheConfig {
 
         EurekaOneDiscoveryStrategyFactory.setEurekaClient(eurekaClient);
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        logger.info(this.env.getProperty("eureka.client.serviceUrl.defaultZone"));
         config.getNetworkConfig().getJoin().getEurekaConfig()
                 .setEnabled(true)
                 .setProperty("self-registration", "false")
-                .setProperty("namespace", "hazelcast")
                 .setProperty("shouldUseDns", "false")
                 .setProperty("use-classpath-eureka-client-props", "false")
                 .setProperty("use-metadata-for-host-and-port", "true");
