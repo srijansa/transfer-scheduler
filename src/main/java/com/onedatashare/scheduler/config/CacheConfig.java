@@ -45,7 +45,6 @@ public class CacheConfig {
     @Value("${hazelcast.enterprise.license}")
     String hazelcastLicenseKey;
 
-    @SneakyThrows
     @Bean(name = "hazelcastInstance")
     @Profile("prod")
     public HazelcastInstance prodHazelcastInstance(EurekaClient eurekaClient, SSLConfig sslConfig) {
@@ -61,11 +60,9 @@ public class CacheConfig {
                 .setEnabled(true)
                 .setProperty("self-registration", "true")
                 .setProperty("namespace", "hazelcast")
+                .setProperty("shouldUseDns", "false")
+                .setProperty("use-classpath-eureka-client-props", "false")
                 .setProperty("use-metadata-for-host-and-port", "true");
-//                .setProperty("use-classpath-eureka-client-props", "false")
-//                .setProperty("shouldUseDns", "false")
-
-
         return Hazelcast.newHazelcastInstance(config);
     }
 
