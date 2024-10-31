@@ -64,6 +64,7 @@ public class CacheConfig {
         config.getNetworkConfig().getJoin().getEurekaConfig()
                 .setEnabled(true)
                 .setProperty("self-registration", "true")
+                .setProperty("namespace", "hazelcast")
                 .setProperty("shouldUseDns", "false")
                 .setProperty("serviceUrl.default", this.env.getProperty("eureka.client.serviceUrl.defaultZone"))
                 .setProperty("use-classpath-eureka-client-props", "false");
