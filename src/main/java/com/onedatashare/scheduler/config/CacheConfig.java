@@ -58,7 +58,7 @@ public class CacheConfig {
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config.getNetworkConfig().getJoin().getEurekaConfig()
                 .setEnabled(true)
-                .setProperty("self-registration", "true")
+                .setProperty("self-registration", "false")
                 .setProperty("namespace", "hazelcast")
                 .setProperty("shouldUseDns", "false")
                 .setProperty("use-classpath-eureka-client-props", "false")
