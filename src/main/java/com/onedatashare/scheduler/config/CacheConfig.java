@@ -68,7 +68,6 @@ public class CacheConfig {
         config.getNetworkConfig().setPortAutoIncrement(true);
         config.getNetworkConfig().setSSLConfig(sslConfig);
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(false);
 
         logger.info(this.env.getProperty("eureka.client.serviceUrl.defaultZone"));
         config.getNetworkConfig().getJoin().getEurekaConfig()
