@@ -10,6 +10,8 @@ import com.hazelcast.core.HazelcastJsonValue;
 import com.onedatashare.scheduler.enums.MessageType;
 import com.onedatashare.scheduler.model.TransferJobRequest;
 import com.onedatashare.scheduler.model.TransferParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class MessageSender {
     private final HazelcastInstance hazelcastInstance;
     private final ObjectMapper objectMapper;
+    private final Logger logger = LoggerFactory.getLogger(MessageSender.class);
 
     public MessageSender(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance, ObjectMapper objectMapper) {
         this.hazelcastInstance = hazelcastInstance;
@@ -35,9 +38,10 @@ public class MessageSender {
 
         String jsonMsg = this.objectMapper.writeValueAsString(obj);
         JsonNode jsonNode = this.objectMapper.readTree(jsonMsg);
-        ((ObjectNode) jsonNode).put("type", messageType.toString());
+        jsonNode = ((ObjectNode) jsonNode).put("type", messageType.toString());
         IQueue<HazelcastJsonValue> iqueue = this.hazelcastInstance.getQueue(transferNodeName);
         iqueue.put(new HazelcastJsonValue(jsonNode.toString()));
+        logger.info("Send Msg {} to node {}", jsonNode, transferNodeName);
     }
 
 }

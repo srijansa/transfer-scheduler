@@ -1,92 +1,87 @@
 package com.onedatashare.scheduler.services.maps;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.Predicates;
-import com.onedatashare.scheduler.model.CarbonIntensityMapKey;
-import com.onedatashare.scheduler.model.carbon.CarbonIpEntry;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.onedatashare.scheduler.model.carbon.CarbonMeasurement;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class CarbonMapService {
-    private final PredicateBuilder.EntryObject e;
-    private final ObjectMapper objectMapper;
-    IMap<HazelcastJsonValue, HazelcastJsonValue> carbonIntensityMap;
 
-    public CarbonMapService(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance, ObjectMapper objectMapper) {
-        this.carbonIntensityMap = hazelcastInstance.getMap("carbon-intensity-map");
-        this.e = Predicates.newPredicateBuilder().getEntryObject();
+    private final ObjectMapper objectMapper;
+    private final IMap<UUID, HazelcastJsonValue> carbonIntensityMap;
+    private Logger logger = LoggerFactory.getLogger(CarbonMapService.class);
+
+    private final String ownerIdKey = "ownerId";
+    private final String transferNodeNameKey = "transferNodeName";
+    private final String jobUuidKey = "jobUuid";
+
+    public CarbonMapService(IMap<UUID, HazelcastJsonValue> carbonIntensityMap, ObjectMapper objectMapper) {
+        this.carbonIntensityMap = carbonIntensityMap;
         this.objectMapper = objectMapper;
     }
 
 
-    public Set<CarbonIntensityMapKey> getCarbonMeasurementsForUserAndJob(String ownerId, UUID jobUuid) throws JsonProcessingException {
-        Predicate<HazelcastJsonValue, HazelcastJsonValue> predicate = e.get("ownerId").equal(ownerId).and(e.get("jobUuid").equal(jobUuid)).and(e.get("runningJob").equal("false"));
-        Set<HazelcastJsonValue> keySet = this.carbonIntensityMap.keySet(predicate);
-        Set<CarbonIntensityMapKey> carbonIntensityMapKeys = new HashSet<>();
-        for (HazelcastJsonValue value : keySet) {
-            CarbonIntensityMapKey key = this.objectMapper.readValue(value.getValue(), CarbonIntensityMapKey.class);
-            carbonIntensityMapKeys.add(key);
-        }
-        return carbonIntensityMapKeys;
+    public List<CarbonMeasurement> getCarbonMeasurementsForUserAndJob(String ownerId, UUID jobUuid) throws JsonProcessingException {
+        return this.queryCarbonMeasurementValues(Predicates.and(Predicates.equal(this.ownerIdKey, ownerId), Predicates.equal(this.jobUuidKey, jobUuid.toString())));
     }
 
-    public List<CarbonIpEntry> getValueForKey(CarbonIntensityMapKey key) throws JsonProcessingException {
-        String json = this.objectMapper.writeValueAsString(key);
-        HazelcastJsonValue jsonValue = this.carbonIntensityMap.get(new HazelcastJsonValue(json));
-        return this.objectMapper.readValue(jsonValue.getValue(), new TypeReference<List<CarbonIpEntry>>() {
-        });
-    }
-
-    public Map<CarbonIntensityMapKey, List<CarbonIpEntry>> getLatestCarbonEntryForJob(UUID uuid) throws JsonProcessingException {
-        Predicate<HazelcastJsonValue, HazelcastJsonValue> predicate = e.get("jobUuid").equal(uuid);
-        Set<HazelcastJsonValue> keys = this.carbonIntensityMap.keySet(predicate);
-        CarbonIntensityMapKey latestKeyForJob = null;
-
-        for (HazelcastJsonValue key : keys) {
-            CarbonIntensityMapKey carbonIntensityMapKey = this.objectMapper.readValue(key.toString(), CarbonIntensityMapKey.class);
+    public CarbonMeasurement getLatestCarbonEntryForJob(UUID uuid) throws JsonProcessingException {
+        List<CarbonMeasurement> values = this.queryCarbonMeasurementValues(Predicates.equal(this.jobUuidKey, uuid.toString()));
+        CarbonMeasurement latestKeyForJob = null;
+        for (CarbonMeasurement value : values) {
             if (latestKeyForJob == null) {
-                latestKeyForJob = carbonIntensityMapKey;
+                latestKeyForJob = value;
+                continue;
             }
-            if (carbonIntensityMapKey.getTimeMeasuredAt().isAfter(latestKeyForJob.getTimeMeasuredAt())) {
-                latestKeyForJob = carbonIntensityMapKey;
+            if (value.getTimeMeasuredAt().isBefore(latestKeyForJob.getTimeMeasuredAt())) {
+                latestKeyForJob = value;
             }
         }
-
-        List<CarbonIpEntry> value = this.getValueForKey(latestKeyForJob);
-        Map<CarbonIntensityMapKey, List<CarbonIpEntry>> retMap = new HashMap<>();
-        retMap.put(latestKeyForJob, value);
-        return retMap;
+        return latestKeyForJob;
     }
 
-    public Map<CarbonIntensityMapKey, List<CarbonIpEntry>> getAllCarbonIntensityForJob(UUID uuid) throws JsonProcessingException {
-        Predicate<HazelcastJsonValue, HazelcastJsonValue> predicate = e.get("jobUuid").equal(uuid);
-        Set<HazelcastJsonValue> keySet = this.carbonIntensityMap.keySet(predicate);
-        Map<CarbonIntensityMapKey, List<CarbonIpEntry>> retMap = new HashMap<>();
+    public List<CarbonMeasurement> getAllCarbonIntensityForJob(UUID uuid) throws JsonProcessingException {
+        logger.info("Querying Carbon Measurements for Job with UUID: {}", uuid);
+        return this.queryCarbonMeasurementValues(Predicates.equal(this.jobUuidKey, uuid.toString()));
+    }
 
-        for (HazelcastJsonValue key : keySet) {
-            CarbonIntensityMapKey localKey = this.objectMapper.readValue(key.getValue(), CarbonIntensityMapKey.class);
-            List<CarbonIpEntry> carbonIpEntryList = this.getValueForKey(localKey);
-            retMap.put(localKey, carbonIpEntryList);
+    public List<CarbonMeasurement> getUserAndTransferNodeCarbonEntriesForJob(UUID jobUuid, String transferNodeName, String userEmail) throws JsonProcessingException {
+        logger.info("Querying Carbon Entries for Job: jobUuid={}, transferNodeName={}, userEmail={}", jobUuid, transferNodeName, userEmail);
+        return this.queryCarbonMeasurementValues(Predicates.and(Predicates.equal(this.jobUuidKey, jobUuid.toString()), Predicates.equal(this.transferNodeNameKey, transferNodeName), Predicates.equal(this.ownerIdKey, userEmail)));
+    }
+
+    public List<CarbonMeasurement> getAllUserEntries(String userEmail) throws JsonProcessingException {
+        ;
+        return queryCarbonMeasurementValues(Predicates.and(Predicates.equal(this.ownerIdKey, userEmail)));
+    }
+
+    public List<CarbonMeasurement> getNodeCarbonMeasurements(String transferNodeName) throws JsonProcessingException {
+        return queryCarbonMeasurementValues(Predicates.equal(this.transferNodeNameKey, transferNodeName));
+    }
+
+    @NotNull
+    private List<CarbonMeasurement> queryCarbonMeasurementValues(Predicate<UUID, HazelcastJsonValue> predicate) throws JsonProcessingException {
+        logger.info("Carbon Map size: {}", this.carbonIntensityMap.size());
+        Collection<HazelcastJsonValue> values = this.carbonIntensityMap.values(predicate);
+        List<CarbonMeasurement> retList = new ArrayList<>();
+        for (HazelcastJsonValue value : values) {
+            CarbonMeasurement measurement = this.objectMapper.readValue(value.toString(), CarbonMeasurement.class);
+            retList.add(measurement);
         }
 
-        return retMap.entrySet().stream()
-                .sorted((entry1, entry2) -> entry2.getKey().getTimeMeasuredAt().compareTo(entry1.getKey().getTimeMeasuredAt()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+        return retList;
     }
 }

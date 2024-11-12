@@ -1,10 +1,7 @@
 package com.onedatashare.scheduler.services;
 
 import com.onedatashare.scheduler.enums.EndPointType;
-import com.onedatashare.scheduler.model.EntityInfo;
-import com.onedatashare.scheduler.model.RequestFromODSDTO;
-import com.onedatashare.scheduler.model.TransferJobRequest;
-import com.onedatashare.scheduler.model.TransferOptions;
+import com.onedatashare.scheduler.model.*;
 import com.onedatashare.scheduler.model.credential.AccountEndpointCredential;
 import com.onedatashare.scheduler.model.credential.OAuthEndpointCredential;
 import com.onedatashare.scheduler.services.expanders.*;
@@ -162,6 +159,9 @@ public class RequestModifier {
         transferJobRequest.setTransferNodeName(odsTransferRequest.getTransferNodeName());
         TransferOptions newOptions = this.staticOptimizer.decideParams(transferJobRequest.getSource().getInfoList(), transferJobRequest.getOptions());
         transferJobRequest.setOptions(newOptions);
+        if(odsTransferRequest.getTransferSla() == null) transferJobRequest.setTransferSla(new TransferSla());
+        else transferJobRequest.setTransferSla(odsTransferRequest.getTransferSla());
+
         return transferJobRequest;
     }
 

@@ -2,6 +2,8 @@ package com.onedatashare.scheduler.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hazelcast.client.Client;
+import com.hazelcast.client.ClientListener;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastJsonValue;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,13 +29,8 @@ public class FileTransferNodeDiscovery {
     private final IMap<String, HazelcastJsonValue> fileNodeMap;
 
 
-    public FileTransferNodeDiscovery(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance, ObjectMapper objectMapper) {
-        this.fileNodeMap = hazelcastInstance.getMap("file-transfer-node-map");
-        fileNodeMap.addIndex(IndexType.HASH, "odsOwner");
-        fileNodeMap.addIndex(IndexType.HASH, "nodeName");
-        fileNodeMap.addIndex(IndexType.HASH, "runningJob");
-        fileNodeMap.addIndex(IndexType.HASH, "online");
-        fileNodeMap.addEntryListener(new FileTransferNodeEventListener(hazelcastInstance, objectMapper), true);
+    public FileTransferNodeDiscovery(IMap<String, HazelcastJsonValue> fileTransferNodeMap, ObjectMapper objectMapper) {
+        this.fileNodeMap = fileTransferNodeMap;
         this.objectMapper = objectMapper;
     }
 
@@ -49,8 +47,8 @@ public class FileTransferNodeDiscovery {
 
     public List<FileTransferNodeMetaData> getOdsNodes(){
         PredicateBuilder.EntryObject e = new PredicateBuilderImpl();
-        PredicateBuilder getOwnerNodeAndFree = e.get("nodeName").equal("ODSTransferService").or(e.get("odsOwner").equal(""));
-        Collection<HazelcastJsonValue> userFreeNodeJson = this.fileNodeMap.values(getOwnerNodeAndFree);
+        PredicateBuilder predicate = e.get("nodeName").equal("ODSTransferService").or(e.get("odsOwner").equal("OneDataShare"));
+        Collection<HazelcastJsonValue> userFreeNodeJson = this.fileNodeMap.values(predicate);
         return userFreeNodeJson.stream().map(hazelcastJsonValue -> {
             try {
                 return this.objectMapper.readValue(hazelcastJsonValue.getValue(), FileTransferNodeMetaData.class);
@@ -73,5 +71,8 @@ public class FileTransferNodeDiscovery {
     public int totalConnectedFileTransferNodes() {
         return this.fileNodeMap.size();
     }
+
+
+
 
 }

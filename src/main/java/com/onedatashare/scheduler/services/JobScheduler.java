@@ -56,4 +56,5 @@ public class JobScheduler {
     public void deleteScheduledJob(UUID jobUuid) {
         this.fileTransferScheduleMap.deleteJob(jobUuid);
     }
+
 }

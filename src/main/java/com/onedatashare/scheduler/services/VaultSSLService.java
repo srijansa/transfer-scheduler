@@ -65,7 +65,7 @@ public class VaultSSLService implements SSLContextFactory {
             } catch (Exception e) {
                 logger.error(e.getMessage());
             }
-        }, 0, Duration.ofMinutes(1).toSeconds(), java.util.concurrent.TimeUnit.SECONDS);
+        }, 0, Duration.ofDays(1).toSeconds(), java.util.concurrent.TimeUnit.SECONDS);
     }
 
     /***
