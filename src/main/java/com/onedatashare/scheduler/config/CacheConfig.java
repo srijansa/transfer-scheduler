@@ -1,14 +1,12 @@
 package com.onedatashare.scheduler.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hazelcast.client.console.HazelcastCommandLine;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastJsonValue;
-import com.hazelcast.eureka.one.EurekaOneDiscoveryStrategyFactory;
 import com.hazelcast.map.IMap;
 import com.hazelcast.query.LocalIndexStats;
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
@@ -17,7 +15,6 @@ import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import com.onedatashare.scheduler.model.CarbonIntensityMapKey;
 import com.onedatashare.scheduler.model.carbon.CarbonIpEntry;
-import com.onedatashare.scheduler.services.FtnClientListener;
 import com.onedatashare.scheduler.services.VaultSSLService;
 import com.onedatashare.scheduler.services.listeners.FileTransferNodeEventListener;
 import lombok.SneakyThrows;
@@ -30,7 +27,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
-import org.springframework.vault.core.VaultTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -68,6 +64,7 @@ public class CacheConfig {
         config.getNetworkConfig().setPortAutoIncrement(true);
         config.getNetworkConfig().setSSLConfig(sslConfig);
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+
 
         logger.info(this.env.getProperty("eureka.client.serviceUrl.defaultZone"));
         config.getNetworkConfig().getJoin().getEurekaConfig()
@@ -120,20 +117,20 @@ public class CacheConfig {
         IMap<String, HazelcastJsonValue> fileNodeMap = hazelcastInstance.getMap("file-transfer-node-map");
         Map<String, LocalIndexStats> index = fileNodeMap.getLocalMapStats().getIndexStats();
         if (!index.containsKey("odsOwner")) fileNodeMap.addIndex(IndexType.HASH, "odsOwner");
-        if(!index.containsKey("nodeName")) fileNodeMap.addIndex(IndexType.HASH, "nodeName");
-        if(!index.containsKey("runningJob")) fileNodeMap.addIndex(IndexType.HASH, "runningJob");
-        if(!index.containsKey("online")) fileNodeMap.addIndex(IndexType.HASH, "online");
+        if (!index.containsKey("nodeName")) fileNodeMap.addIndex(IndexType.HASH, "nodeName");
+        if (!index.containsKey("runningJob")) fileNodeMap.addIndex(IndexType.HASH, "runningJob");
+        if (!index.containsKey("online")) fileNodeMap.addIndex(IndexType.HASH, "online");
         fileNodeMap.addEntryListener(new FileTransferNodeEventListener(hazelcastInstance, objectMapper), true);
         return fileNodeMap;
     }
 
     @Bean
     public IMap<UUID, HazelcastJsonValue> carbonIntensityMap(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
-        IMap<UUID, HazelcastJsonValue> carbonMap =  hazelcastInstance.getMap("carbon-intensity-map");
+        IMap<UUID, HazelcastJsonValue> carbonMap = hazelcastInstance.getMap("carbon-intensity-map");
         Map<String, LocalIndexStats> indexMap = carbonMap.getLocalMapStats().getIndexStats();
-        if(!indexMap.containsKey("ownerId")) carbonMap.addIndex(IndexType.HASH, "ownerId");
-        if(!indexMap.containsKey("transferNodeName")) carbonMap.addIndex(IndexType.HASH, "transferNodeName");
-        if(!indexMap.containsKey("jobUuid")) carbonMap.addIndex(IndexType.HASH, "jobUuid");
+        if (!indexMap.containsKey("ownerId")) carbonMap.addIndex(IndexType.HASH, "ownerId");
+        if (!indexMap.containsKey("transferNodeName")) carbonMap.addIndex(IndexType.HASH, "transferNodeName");
+        if (!indexMap.containsKey("jobUuid")) carbonMap.addIndex(IndexType.HASH, "jobUuid");
         return carbonMap;
     }
 

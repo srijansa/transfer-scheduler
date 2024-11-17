@@ -84,4 +84,8 @@ public class TransferSchedulerMapService {
         logger.info("Putting File Transfer Job in Map: \n {}", jsonRequestValue);
         this.jobScheduleMap.put(transferJobRequest.getJobUuid(), new HazelcastJsonValue(jsonRequestValue), delay, TimeUnit.SECONDS);
     }
+
+    public boolean containsKey(UUID jobUuid) {
+        return this.jobScheduleMap.containsKey(jobUuid);
+    }
 }

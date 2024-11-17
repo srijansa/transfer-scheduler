@@ -13,6 +13,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -30,6 +31,9 @@ public class JobSchedulerAlgo implements Runnable {
     private final MessageSender messageSender;
     private final Logger logger = LoggerFactory.getLogger(JobSchedulerAlgo.class);
     private final IScheduledExecutorService jobSchedulerExecutorService;
+
+    @Autowired
+    FileTransferNodeDiscovery fileTransferNodeDiscovery;
 
     public JobSchedulerAlgo(IScheduledExecutorService jobSchedulerExecutorService, InitialAndFinalJobCarbonMapService initialAndFinalJobCarbonMapService, TransferSchedulerMapService transferSchedulerMapService, CarbonMapService carbonMapService, MessageSender messageSender) {
         this.transferSchedulerMapService = transferSchedulerMapService;
@@ -91,12 +95,13 @@ public class JobSchedulerAlgo implements Runnable {
             double initialScheduledJobCi = this.averageCarbonIntensity(this.initialAndFinalJobCarbonMapService.getInitialMeasurement(scheduledFileTransfer.getJobUuid()));
             double targetCi = initialScheduledJobCi * (1 + sla.getPercentCarbon());
             logger.info("Min Ci: {} the target Ci we are going for is: {} \n Min POJO is: {} for job: {}", minCi, targetCi, lowestCarbonMeasurement, scheduledFileTransfer.getJobUuid());
-            if (minCi <= targetCi) {
+
+            if (minCi <= targetCi && !this.fileTransferNodeDiscovery.getFileTransferNode(lowestCarbonMeasurement.getTransferNodeName()).getRunningJob()) {
                 //we launch the job
                 logger.info("Min Ci meets the threshold Target CI using TransferNode: {} to run job: {}", lowestCarbonMeasurement.getTransferNodeName(), scheduledFileTransfer);
                 scheduledFileTransfer.setTransferNodeName(lowestCarbonMeasurement.getTransferNodeName());
                 this.initialAndFinalJobCarbonMapService.putFinalMeasurementForJob(scheduledFileTransfer.getJobUuid(), lowestCarbonMeasurement);
-                this.messageSender.sendMessage(scheduledFileTransfer, MessageType.TRANSFER_JOB_REQUEST);
+                this.messageSender.sendMessage(scheduledFileTransfer, MessageType.TRANSFER_JOB_REQUEST, scheduledFileTransfer.getTransferNodeName());
                 this.transferSchedulerMapService.deleteJob(scheduledFileTransfer.getJobUuid());
             }
         }

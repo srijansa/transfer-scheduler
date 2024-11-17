@@ -2,6 +2,8 @@ package com.onedatashare.scheduler.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.onedatashare.scheduler.enums.EndPointType;
+import com.onedatashare.scheduler.enums.MessageType;
+import com.onedatashare.scheduler.model.FileTransferNodeMetaData;
 import com.onedatashare.scheduler.model.RequestFromODSDTO;
 import com.onedatashare.scheduler.model.TransferJobRequest;
 import com.onedatashare.scheduler.services.maps.TransferSchedulerMapService;
@@ -14,6 +16,7 @@ import java.util.UUID;
 @Service
 public class JobScheduler {
 
+    private final FileTransferNodeDiscovery fileTransferNodeDiscovery;
     protected TransferSchedulerMapService fileTransferScheduleMap; // the map that stores the scheduled jobs
 
     RequestModifier requestModifier;
@@ -21,10 +24,11 @@ public class JobScheduler {
     MessageSender messageSender;
 
 
-    public JobScheduler(TransferSchedulerMapService transferSchedulerMapService, RequestModifier requestModifier, MessageSender messageSender) {
+    public JobScheduler(FileTransferNodeDiscovery fileTransferNodeDiscovery, TransferSchedulerMapService transferSchedulerMapService, RequestModifier requestModifier, MessageSender messageSender) {
         this.requestModifier = requestModifier;
         this.messageSender = messageSender;
         this.fileTransferScheduleMap = transferSchedulerMapService;
+        this.fileTransferNodeDiscovery = fileTransferNodeDiscovery;
     }
 
     public Collection<TransferJobRequest> listScheduledJobs(String userEmail) throws JsonProcessingException {
@@ -57,4 +61,12 @@ public class JobScheduler {
         this.fileTransferScheduleMap.deleteJob(jobUuid);
     }
 
+    public void stopJob(UUID jobUuid) throws JsonProcessingException, InterruptedException {
+        if (this.fileTransferScheduleMap.containsKey(jobUuid)) {
+            this.fileTransferScheduleMap.deleteJob(jobUuid);
+        } else {
+            FileTransferNodeMetaData fileTransferNodeMetaData = this.fileTransferNodeDiscovery.getNodeRunningJob(jobUuid);
+            messageSender.sendMessage(null, MessageType.STOP_JOB, fileTransferNodeMetaData.getNodeName());
+        }
+    }
 }

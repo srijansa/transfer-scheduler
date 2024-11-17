@@ -34,6 +34,16 @@ public class JobController {
         this.jobScheduler = jobScheduler;
     }
 
+    @DeleteMapping("/job/stop/{jobUuid}")
+    public ResponseEntity stopJob(@PathVariable UUID jobUuid) {
+        try {
+            this.jobScheduler.stopJob(jobUuid);
+            return ResponseEntity.ok().build();
+        } catch (JsonProcessingException | InterruptedException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/job/schedule")
     public ResponseEntity<UUID> scheduleJob(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime jobStartTime, @RequestBody RequestFromODSDTO transferRequest) {
         logger.info(transferRequest.toString());
@@ -51,7 +61,7 @@ public class JobController {
         transferRequest.setJobUuid(jobUuid);
         List<EntityInfo> fileList = this.requestModifier.selectAndExpand(transferRequest.getSource(), transferRequest.getSource().getInfoList());
         transferRequest.getSource().setInfoList(fileList);
-        this.messageSender.sendMessage(transferRequest, MessageType.TRANSFER_JOB_REQUEST);
+        this.messageSender.sendMessage(transferRequest, MessageType.TRANSFER_JOB_REQUEST, transferRequest.getTransferNodeName());
         return ResponseEntity.ok(jobUuid);
     }
 
