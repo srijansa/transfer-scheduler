@@ -31,28 +31,32 @@ public class JobSchedulerTest {
     @MockBean
     RequestModifier requestModifier;
 
+
     @MockBean
     TransferSchedulerMapService transferSchedulerMapService;
+
+    @MockBean
+    FileTransferNodeDiscovery fileTransferNodeDiscovery;
 
     String testUserEmail = "test@gmail.com";
 
     @Test
     public void testOnStartMapIsEmpty() throws JsonProcessingException {
         //TransferSchedulerMapService transferSchedulerMapService, RequestModifier requestModifier, MessageSender messageSender
-        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        testObj = new JobScheduler(fileTransferNodeDiscovery, transferSchedulerMapService, requestModifier, messageSender);
         Assert.isTrue(testObj.listScheduledJobs("").isEmpty(), "Default map is of size not 0??");
     }
 
     @Test
     public void testAddOneNullEntryToHazelcast() throws JsonProcessingException {
-        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        testObj = new JobScheduler(fileTransferNodeDiscovery, transferSchedulerMapService, requestModifier, messageSender);
         testObj.saveScheduledJob(null, LocalDateTime.now());
         Assert.isTrue(testObj.listScheduledJobs("").isEmpty(), "Added one null entry and there should be size 0");
     }
 
     @Test
     public void testAddOneRealEntryToHazelcast() throws JsonProcessingException {
-        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        testObj = new JobScheduler(fileTransferNodeDiscovery, transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
         request.setOwnerId(this.testUserEmail);
         request.setSource(new FileSource());
@@ -65,7 +69,7 @@ public class JobSchedulerTest {
 
     @Test
     public void testRemoveOneEntryToHazelcast() throws JsonProcessingException {
-        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        testObj = new JobScheduler(fileTransferNodeDiscovery, transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
         request.setOwnerId("test@email.com");
         request.setSource(new FileSource());
@@ -81,7 +85,7 @@ public class JobSchedulerTest {
 
     @Test
     public void testRemoteOneNoneExistentEntry() throws JsonProcessingException {
-        testObj = new JobScheduler(transferSchedulerMapService, requestModifier, messageSender);
+        testObj = new JobScheduler(fileTransferNodeDiscovery, transferSchedulerMapService, requestModifier, messageSender);
         RequestFromODSDTO request = new RequestFromODSDTO();
         request.setOwnerId("test@email.com");
         request.setSource(new FileSource());

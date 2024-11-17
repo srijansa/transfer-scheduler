@@ -20,6 +20,7 @@ public class EntryExpiredHazelcast implements EntryExpiredListener<UUID, Transfe
     @SneakyThrows
     @Override
     public void entryExpired(EntryEvent<UUID, TransferJobRequest> event) {
-        messageSender.sendMessage(event.getValue(), MessageType.TRANSFER_JOB_REQUEST);
+        TransferJobRequest transferJobRequest = event.getValue();
+        messageSender.sendMessage(transferJobRequest, MessageType.TRANSFER_JOB_REQUEST, transferJobRequest.getTransferNodeName());
     }
 }

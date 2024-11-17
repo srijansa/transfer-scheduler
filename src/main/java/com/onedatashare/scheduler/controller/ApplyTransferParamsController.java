@@ -21,7 +21,7 @@ public class ApplyTransferParamsController {
     @PutMapping("/apply/application/params")
     public ResponseEntity<Object> consumeApplicationParamChange(@RequestBody TransferParams transferParams) {
         try {
-            this.messageSender.sendMessage(transferParams, MessageType.APPLICATION_PARAM_CHANGE);
+            this.messageSender.sendMessage(transferParams, MessageType.APPLICATION_PARAM_CHANGE, transferParams.getTransferNodeName());
             return ResponseEntity.ok().build();
         } catch (JsonProcessingException e) {
             return ResponseEntity.badRequest().build();

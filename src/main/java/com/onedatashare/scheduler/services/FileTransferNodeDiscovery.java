@@ -68,6 +68,21 @@ public class FileTransferNodeDiscovery {
         }).collect(Collectors.toList());
     }
 
+    public FileTransferNodeMetaData getFileTransferNode(String nodeName) throws JsonProcessingException {
+        HazelcastJsonValue jsonValue = this.fileNodeMap.get(nodeName);
+        return this.objectMapper.readValue(jsonValue.getValue(), FileTransferNodeMetaData.class);
+    }
+
+    public FileTransferNodeMetaData getNodeRunningJob(UUID jobUuid) throws JsonProcessingException {
+        Predicate<String, HazelcastJsonValue> predicate = Predicates.equal("jobUuid", jobUuid);
+        Collection<HazelcastJsonValue> nodes = this.fileNodeMap.values(predicate);
+        for(HazelcastJsonValue node : nodes){
+            FileTransferNodeMetaData fileTransferNodeMetaData = this.objectMapper.readValue(node.getValue(), FileTransferNodeMetaData.class);
+            return fileTransferNodeMetaData;
+        }
+        return null;
+    }
+
     public int totalConnectedFileTransferNodes() {
         return this.fileNodeMap.size();
     }
