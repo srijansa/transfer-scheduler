@@ -82,6 +82,9 @@ public class TransferSchedulerMapService {
         long delay = Duration.between(LocalDateTime.now(), jobStartTime).getSeconds();
         String jsonRequestValue = this.objectMapper.writeValueAsString(transferJobRequest);
         logger.info("Putting File Transfer Job in Map: \n {}", jsonRequestValue);
+        if(delay < 1) {
+            delay = 1;
+        }
         this.jobScheduleMap.put(transferJobRequest.getJobUuid(), new HazelcastJsonValue(jsonRequestValue), delay, TimeUnit.SECONDS);
     }
 
