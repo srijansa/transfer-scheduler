@@ -2,13 +2,11 @@ package com.onedatashare.scheduler.services.maps;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hazelcast.config.IndexConfig;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.map.IMap;
 import com.hazelcast.query.LocalIndexStats;
-import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.Predicates;
 import com.onedatashare.scheduler.model.TransferJobRequest;
 import com.onedatashare.scheduler.services.MessageSender;
@@ -40,10 +38,10 @@ public class TransferSchedulerMapService {
     @PostConstruct
     public void init() {
         Map<String, LocalIndexStats> indexs = this.jobScheduleMap.getLocalMapStats().getIndexStats();
-        if(!indexs.containsKey("ownerId")){
+        if (!indexs.containsKey("ownerId")) {
             this.jobScheduleMap.addIndex(IndexType.HASH, "ownerId");
         }
-        if(!indexs.containsKey("jobUuid")) {
+        if (!indexs.containsKey("jobUuid")) {
             this.jobScheduleMap.addIndex(IndexType.HASH, "jobUuid");
         }
     }
@@ -51,7 +49,10 @@ public class TransferSchedulerMapService {
     public Collection<UUID> getKeys() {
         return this.jobScheduleMap.keySet();
     }
-    public Collection<UUID> getLocalKeys() { return this.jobScheduleMap.localKeySet();}
+
+    public Collection<UUID> getLocalKeys() {
+        return this.jobScheduleMap.localKeySet();
+    }
 
     public TransferJobRequest getValue(UUID uuid) throws JsonProcessingException {
         HazelcastJsonValue hazelcastJsonValue = this.jobScheduleMap.get(uuid);
@@ -82,8 +83,8 @@ public class TransferSchedulerMapService {
         long delay = Duration.between(LocalDateTime.now(), jobStartTime).getSeconds();
         String jsonRequestValue = this.objectMapper.writeValueAsString(transferJobRequest);
         logger.info("Putting File Transfer Job in Map: \n {}", jsonRequestValue);
-        if(delay < 1) {
-            delay = 1;
+        if (delay < 60) {
+            delay = 60;
         }
         this.jobScheduleMap.put(transferJobRequest.getJobUuid(), new HazelcastJsonValue(jsonRequestValue), delay, TimeUnit.SECONDS);
     }
