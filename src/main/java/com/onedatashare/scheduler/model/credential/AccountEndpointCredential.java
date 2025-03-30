@@ -10,4 +10,5 @@ public class AccountEndpointCredential extends EndpointCredential{
     @ToString.Exclude
     private String secret; //This will contain the password of the resource you
     byte[] encryptedSecret;
+    private String customEndpoint;
 }
