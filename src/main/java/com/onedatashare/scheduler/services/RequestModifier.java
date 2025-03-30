@@ -44,6 +44,9 @@ public class RequestModifier {
     @Autowired
     StaticOptimizer staticOptimizer;
 
+    @Autowired
+    MinIOExpander minIOExpander;
+
     public static Set<EndPointType> vfsCredType = new HashSet<>(Arrays.asList(new EndPointType[]{EndPointType.s3, EndPointType.ftp, EndPointType.sftp, EndPointType.http, EndPointType.scp}));
     public static Set<EndPointType> oAuthType = new HashSet<>(Arrays.asList(new EndPointType[]{EndPointType.dropbox, EndPointType.box, EndPointType.gdrive}));
 
@@ -56,6 +59,9 @@ public class RequestModifier {
             case s3:
                 s3Expander.createClient(source.getVfsSourceCredential());
                 return s3Expander.expandedFileSystem(selectedResources, source.getFileSourcePath());
+            case minIO:
+                minIOExpander.createClient(source.getVfsSourceCredential());
+                return minIOExpander.expandedFileSystem(selectedResources, source.getFileSourcePath());
             case sftp:
             case scp:
                 sftpExpander.createClient(source.getVfsSourceCredential());
@@ -110,6 +116,8 @@ public class RequestModifier {
                 return sftpExpander.destinationChunkSize(entityInfo, destination.getFileDestinationPath(), userChunkSize);
             case s3:
                 return s3Expander.destinationChunkSize(entityInfo, destination.getFileDestinationPath(), userChunkSize);
+            case minIO:
+                return minIOExpander.destinationChunkSize(entityInfo, destination.getFileDestinationPath(), userChunkSize);
             case http:
                 return httpExpander.destinationChunkSize(entityInfo, destination.getFileDestinationPath(), userChunkSize);
         }
@@ -133,7 +141,7 @@ public class RequestModifier {
         d.setType(odsTransferRequest.getDestination().getType());
 
         switch (odsTransferRequest.getSource().getType()) {
-            case scp, http, ftp, sftp, s3:
+            case scp, http, ftp, sftp, s3, minIO:
                 AccountEndpointCredential sourceAccountCred = credentialService.fetchAccountCredential(odsTransferRequest.getSource().getType().toString(), odsTransferRequest.getOwnerId(), odsTransferRequest.getSource().getCredId());
                 s.setVfsSourceCredential(sourceAccountCred);
             case gdrive, box, dropbox:
@@ -142,7 +150,7 @@ public class RequestModifier {
         }
 
         switch (odsTransferRequest.getDestination().getType()) {
-            case scp, http, ftp, sftp, s3:
+            case scp, http, ftp, sftp, s3, minIO:
                 AccountEndpointCredential destAccountCred = credentialService.fetchAccountCredential(odsTransferRequest.getDestination().getType().toString(), odsTransferRequest.getOwnerId(), odsTransferRequest.getDestination().getCredId());
                 d.setVfsDestCredential(destAccountCred);
             case gdrive, box, dropbox:
@@ -176,7 +184,7 @@ public class RequestModifier {
      */
     @Deprecated
     public int correctChunkSize(EndPointType destType, int chunkSize) {
-        if (destType.equals(EndPointType.s3) && chunkSize < 5000000) { //5MB as we work with bytes not bits!
+        if ((destType.equals(EndPointType.s3) || destType.equals(EndPointType.minIO)) && chunkSize < 5000000) { //5MB as we work with bytes not bits!
             return 10000000;
         } else if (destType.equals(EndPointType.gdrive) && chunkSize < 5000000) {
             return 10000000;
